@@ -1,7 +1,6 @@
 require('dotenv').config();
-const _ = require('lodash');
 const { client, uploadMainImage, uploadSlideShowImage } = require('./sanity.js')
-const { PORT } = require('./config.js')
+const { PORT, PROJECT_ID } = require('./config.js')
 const { processImage } = require('./image.js')
 
 const express = require("express")
@@ -14,8 +13,10 @@ const jsonParser = bodyParser.json()
 app.post("/", jsonParser, async (req, res) => {
     const body = req.body
 
+    console.log(PROJECT_ID)
+
     if (!body.id) {
-        res.json(JSON.stringify({ status: "ERROR" }))
+        res.status(500).json("Missing post ID")
         return
     }
 
@@ -25,26 +26,34 @@ app.post("/", jsonParser, async (req, res) => {
     const post = await client.fetch(query, params)
 
     if (!post) {
-        res.json(JSON.stringify({ status: "ERROR" }))
+        res.status(500).json("No post found")
         return
     }
 
     // Process main image
     if (post.mainImage?.bild) {
+        console.log('___ Converting main image')
         let ditherPath = await processImage(post.mainImage)
-        await uploadMainImage(ditherPath, post._id)
+        if (ditherPath) {
+            await uploadMainImage(ditherPath, post._id)
+        }
     }
 
     // Process slideshow
     if (post.bildspel && post.bildspel.length > 0) {
+        console.log('___ Converting slideshow')
         for (let i = 0; i < post.bildspel.length; i++) {
+            console.log('... Slide', i + 1, 'of', post.bildspel.length)
             let ditherPath = await processImage(post.bildspel[i])
-            await uploadSlideShowImage(ditherPath, post._id, post.bildspel[i], i)
+            if (ditherPath) {
+                await uploadSlideShowImage(ditherPath, post._id, post.bildspel[i], i)
+            }
         }
     }
 
     // Finish
-    res.json(JSON.stringify({ status: "OK" }))
+    console.log('___ Done')
+    res.status(200).json('Done')
 })
 
 app.listen(PORT, () => {

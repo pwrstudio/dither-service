@@ -16,40 +16,51 @@ const builder = imageUrlBuilder(client)
 const urlFor = source => builder.image(source)
 
 async function uploadMainImage(ditherPath, postId) {
-    const doc = await client.assets.upload('image', fs.createReadStream(ditherPath))
+    try {
+        const doc = await client.assets.upload('image', fs.createReadStream(ditherPath))
 
-    let newImageObject = {
-        _type: "image",
-        asset: {
-            _ref: doc._id,
-            _type: "reference"
+        let newImageObject = {
+            _type: "image",
+            asset: {
+                _ref: doc._id,
+                _type: "reference"
+            }
         }
-    }
 
-    return await client
-        .patch(postId)
-        .set({ "mainImage.dither": newImageObject })
-        .commit()
+        return await client
+            .patch(postId)
+            .set({ "mainImage.dither": newImageObject })
+            .commit()
+
+    } catch (error) {
+        console.error(error);
+        return ''
+    }
 }
 
 async function uploadSlideShowImage(ditherPath, postId, slideObject, index) {
-    const doc = await client.assets.upload('image', fs.createReadStream(ditherPath))
+    try {
+        const doc = await client.assets.upload('image', fs.createReadStream(ditherPath))
 
-    let newSlideObject = slideObject
+        let newSlideObject = slideObject
 
-    newSlideObject.dither = {
-        _type: "image",
-        asset: {
-            _ref: doc._id,
-            _type: "reference"
+        newSlideObject.dither = {
+            _type: "image",
+            asset: {
+                _ref: doc._id,
+                _type: "reference"
+            }
         }
-    }
 
-    return await client
-        .patch(postId)
-        .setIfMissing({ bildspel: [] })
-        .insert("replace", `bildspel[${index}]`, [newSlideObject])
-        .commit()
+        return await client
+            .patch(postId)
+            .setIfMissing({ bildspel: [] })
+            .insert("replace", `bildspel[${index}]`, [newSlideObject])
+            .commit()
+    } catch (error) {
+        console.error(error);
+        return ''
+    }
 }
 
 module.exports = { client, builder, urlFor, uploadMainImage, uploadSlideShowImage }

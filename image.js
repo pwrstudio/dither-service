@@ -1,7 +1,7 @@
 const fs = require('fs');
-var Jimp = require('jimp');
-var PNG = require('pngjs').PNG;
-var floydSteinberg = require('floyd-steinberg');
+const Jimp = require('jimp');
+const PNG = require('pngjs').PNG;
+const floydSteinberg = require('floyd-steinberg');
 const { urlFor } = require('./sanity.js')
 const { OUTPUT_PATH } = require('./config.js')
 const axios = require('axios');
@@ -27,6 +27,7 @@ async function download(url, fileName) {
         });
     } catch (error) {
         console.error(error);
+        return ''
     }
 }
 
@@ -60,17 +61,22 @@ function dither(bwPath, fileName) {
 const processImage = async (imageDyad) => {
     const url = urlFor(imageDyad.bild).url()
     const fileName = url.split("/").pop();
-    // Fetch original image
-    const originalPath = await download(url, OUTPUT_PATH + fileName)
-    if (!originalPath) return false
-    // Grayscale + resize
-    const bwPath = await preProcess(originalPath, fileName)
-    if (!bwPath) return false
-    // Dither
-    const ditherPath = await dither(bwPath, fileName)
-    if (!ditherPath) return false
-
-    return ditherPath
+    try {
+        // Fetch original image
+        const originalPath = await download(url, OUTPUT_PATH + fileName)
+        if (!originalPath) return false
+        // Grayscale + resize
+        const bwPath = await preProcess(originalPath, fileName)
+        if (!bwPath) return false
+        // Dither
+        const ditherPath = await dither(bwPath, fileName)
+        if (!ditherPath) return false
+        // ...
+        return ditherPath
+    } catch (error) {
+        console.error(error);
+        return ''
+    }
 }
 
 module.exports = { processImage }
